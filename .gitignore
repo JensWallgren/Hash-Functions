@@ -1,0 +1,13 @@
+*.swp
+*.swo
+*.obj
+*.pdb
+*.exe
+*.ilk
+
+*.bin
+*.http
+
+tags
+
+
