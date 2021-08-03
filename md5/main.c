@@ -64,6 +64,12 @@ void round_4(uint32_t *a, uint32_t b, uint32_t c, uint32_t d, uint32_t x, int ro
 
 int main(int argc, char **argv) {
 
+    if (argc != 2) {
+        printf("\nError: Wrong number of arguments."
+               "\nUsage: [program_name].exe [input_string]\n\n");
+        return 1;
+    }
+    
     int len = strlen(argv[1]);
     int pad = (56 - len) % 64;
     pad = pad ? pad : 56;
