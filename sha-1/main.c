@@ -18,8 +18,9 @@ uint16_t endian_rev_16(uint16_t n) {
 uint32_t endian_rev_32(uint32_t n) {
     uint32_t ret = 0;
     uint8_t *p = (uint8_t *)&ret;
+    uint8_t *p_n = (uint8_t *)&n;
     for (int i = 0; i < 4; ++i)
-        p[i] = (n >> (i * 8)) & 0xff;
+        p[i] = p_n[4-1-i];
     return ret;
 }
 uint64_t endian_rev_64(uint64_t n) {
@@ -40,8 +41,8 @@ void print_bytes(uint32_t n) {
 void print_endian_rev(uint32_t n) {
     uint32_t num = 0;
     for (int i = 0; i < 4; ++i) {
-        //printf("%x", (n >> (i * 8)) & 0xff);
-        num += ((n >> (i * 8)) & 0xff) << ((4-1-i) * 8);
+        num += ((n >> ((4-1-i) * 8)) & 0xff) << ((4-i-1)*8);
+        //printf("%d : %x\n", i, ((n >> ((4-1-i) * 8)) & 0xff) << ((4-1-i)*8));
     }
 
     printf("%lu", num);
@@ -55,7 +56,7 @@ uint32_t add(uint32_t a, uint32_t b) {
     return ((uint64_t)a + (uint64_t)b) % ((uint64_t)2 >> 32);
 }
 
-uint32_t f(int t, uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+uint32_t f(int t, uint32_t b, uint32_t c, uint32_t d) {
     if (t >= 0 && t < 20)
         return (b & c) | (~b & d);
     else if ((t >= 20 && t < 40) || (t >= 60 && t < 80))
@@ -90,29 +91,45 @@ int main(int argc, char **argv) {
     int pad = (56 - len) % 64;
     pad = pad ? pad : 56;
 
-    char *input = malloc(80);
+    uint8_t *input = malloc(80);
     strcpy(input, argv[1]);
 
     for (int i = len; i < len + pad; ++i)
         input[i] = i == len ? FIRST_PAD : PAD;
 
-    uint64_t *ptr = (uint64_t *)(input + len + pad);
-    *ptr = endian_rev_64(len);
+    uint32_t *ptr = (uint32_t *)(input + len + pad);
+    ptr[0] = (0);
+    ptr[1] = endian_rev_32(len * 8);
     /*
     for (int i = 0; i < 8; ++i) {
         ptr[i] = (len * 8) << (8-i)*8;
     }
-    */
 
     *((uint32_t *)(input+len+pad + 0)) = (len * 8) << 32;
     *((uint32_t *)(input+len+pad + 4)) = (len * 8);
+    */
 
-    uint32_t H[] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
+    uint32_t H[] = {
+        0x67452301,
+        0xefcdab89,
+        0x98badcfe,
+        0x10325476,
+        0xc3d2e1f0
+    };
     uint32_t W[80] = {0};
 
     for (int i = 0; i < len; i += 16) {
-        for (int j = 0; j < 16; ++j) {
-            memcpy(W, input + i*sizeof(uint32_t), 64);
+
+        for (int i = 0; i < 16; ++i) {
+            uint32_t *p = (uint32_t *)input;
+            W[i] = endian_rev_32(p[i]);
+        }
+        //memcpy(W, input, 16 * sizeof(uint32_t));
+
+        uint32_t * w = W;
+        for (int i = 0; i < 16; ++i) {
+            print_endian_rev(W[i]);
+            printf("\n");
         }
 
         for (int t = 16; t < 80; ++t) {
@@ -127,9 +144,24 @@ int main(int argc, char **argv) {
 
         int count = 0;
         for (int t = 0; t < 80; ++t) {
+            uint32_t temp = endian_rev_32(left_rotate(a, 5)) + endian_rev_32(f(t, b, c, d)) + endian_rev_32(e) + endian_rev_32(W[t]) + K(t);
+            temp = endian_rev_32(temp);
+
+            e = d;
+            d = c;
+            c = left_rotate(b, 30);
+            b = a;
+            a = temp;
+
+            H[0] = endian_rev_32(endian_rev_32(H[0]) + endian_rev_32(a));
+            H[1] = endian_rev_32(endian_rev_32(H[1]) + endian_rev_32(b));
+            H[2] = endian_rev_32(endian_rev_32(H[2]) + endian_rev_32(c));
+            H[3] = endian_rev_32(endian_rev_32(H[3]) + endian_rev_32(d));
+            H[4] = endian_rev_32(endian_rev_32(H[4]) + endian_rev_32(e));
             printf("[%d]", t);
             //print_endian_rev(W[t]);
-            print_bytes(W[t]);
+            //print_bytes(W[t]);
+            printf("%lu", W[t]);
             printf("\n");
         }
     }
