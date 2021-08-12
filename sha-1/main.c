@@ -38,23 +38,10 @@ void print_bytes(uint32_t n) {
 }
 
 
-void print_endian_rev(uint32_t n) {
-    uint32_t num = 0;
-    for (int i = 0; i < 4; ++i) {
-        num += ((n >> ((4-1-i) * 8)) & 0xff) << ((4-i-1)*8);
-        //printf("%d : %x\n", i, ((n >> ((4-1-i) * 8)) & 0xff) << ((4-1-i)*8));
-    }
-
-    printf("%lu", num);
-}
-
 uint32_t left_rotate(uint32_t x, int n) {
     return (x << n) | (x >> (32-n));
 }
 
-uint32_t add(uint32_t a, uint32_t b) {
-    return ((uint64_t)a + (uint64_t)b) % ((uint64_t)2 >> 32);
-}
 
 uint32_t f(int t, uint32_t b, uint32_t c, uint32_t d) {
     if (t >= 0 && t < 20)
@@ -100,14 +87,6 @@ int main(int argc, char **argv) {
     uint32_t *ptr = (uint32_t *)(input + len + pad);
     ptr[0] = (0);
     ptr[1] = endian_rev_32(len * 8);
-    /*
-    for (int i = 0; i < 8; ++i) {
-        ptr[i] = (len * 8) << (8-i)*8;
-    }
-
-    *((uint32_t *)(input+len+pad + 0)) = (len * 8) << 32;
-    *((uint32_t *)(input+len+pad + 4)) = (len * 8);
-    */
 
     uint32_t H[] = {
         0x67452301,
@@ -124,7 +103,6 @@ int main(int argc, char **argv) {
             uint32_t *p = (uint32_t *)input;
             W[i] = endian_rev_32(p[i]);
         }
-        //memcpy(W, input, 16 * sizeof(uint32_t));
 
         uint32_t * w = W;
         for (int i = 0; i < 16; ++i) {
@@ -142,43 +120,42 @@ int main(int argc, char **argv) {
         uint32_t d = H[3];
         uint32_t e = H[4];
 
+        // Print padded and extended message
+        for (int t = 0; t < 80; ++t) {
+            printf("[%d]", t);
+            printf("%lu", W[t]);
+            printf("\n");
+        }
+
         int count = 0;
         for (int t = 0; t < 80; ++t) {
-            uint32_t temp = endian_rev_32(left_rotate(a, 5)) + endian_rev_32(f(t, b, c, d)) + endian_rev_32(e) + endian_rev_32(W[t]) + K(t);
-            temp = endian_rev_32(temp);
-
+            uint32_t temp = left_rotate(a, 5) + f(t, b, c, d) + e + W[t] + K(t);
             e = d;
             d = c;
             c = left_rotate(b, 30);
             b = a;
             a = temp;
 
-            H[0] = endian_rev_32(endian_rev_32(H[0]) + endian_rev_32(a));
-            H[1] = endian_rev_32(endian_rev_32(H[1]) + endian_rev_32(b));
-            H[2] = endian_rev_32(endian_rev_32(H[2]) + endian_rev_32(c));
-            H[3] = endian_rev_32(endian_rev_32(H[3]) + endian_rev_32(d));
-            H[4] = endian_rev_32(endian_rev_32(H[4]) + endian_rev_32(e));
-            printf("[%d]", t);
-            //print_endian_rev(W[t]);
-            //print_bytes(W[t]);
-            printf("%lu", W[t]);
-            printf("\n");
+            printf("[t = %d] A=%lu, B=%lu, C=%lu, D=%lu, E=%lu\n", t, a, b, c, d, e);
         }
+
+        H[0] = H[0] + a;
+        H[1] = H[1] + b;
+        H[2] = H[2] + c;
+        H[3] = H[3] + d;
+        H[4] = H[4] + e;
+
+        printf("\nBlock %d processed -- H[0]=%lu, H[1]=%lu, H[2]=%lu, H[3]=%lu, [4]=%lu\n",
+               i, H[0], H[1], H[2], H[3], H[4]);
+
     }
 
+    char *hash = calloc(8*5+1, 1);
+    for (int i = 0; i < 5; ++i) {
+        sprintf(hash, "%s%08x", hash, H[i]);
+    }
 
-    /*
-    uint8_t hash[16];
-    for (int i = 0; i < 4; ++i) { hash[0*4+i] = (a >> (8*i)) & 0xff; }
-    for (int i = 0; i < 4; ++i) { hash[1*4+i] = (b >> (8*i))p& 0xff; }
-    for (int i = 0; i < 4; ++i) { hash[2*4+i] = (c >> (8*i)) & 0xff; }
-    for (int i = 0; i < 4; ++i) { hash[3*4+i] = (d >> (8*i)) & 0xff; }
-
-    printf("\n\nHASH: ");
-    for (int i = 0; i < 16; ++i) { printf("%x", hash[i]); }
-    printf("\n\n");
-    */
-
+    printf("\n\n---- FINAL HASH ----\n   Final hash is: %s\n", hash);
     return 0;
 }
 
