@@ -75,16 +75,19 @@ int main(int argc, char **argv) {
     }
     
     size_t len = strlen(argv[1]);
+    size_t block_count = (len + 8) / 64 + 1;
+    printf("len: %d,  blocks: %d\n\n", len, block_count);
+
     int pad = (56 - len) % 64;
     pad = pad ? pad : 56;
 
-    uint8_t *input = malloc(80);
+    uint8_t *input = malloc(80 * block_count);
     strcpy(input, argv[1]);
 
     for (int i = len; i < len + pad; ++i)
         input[i] = i == len ? FIRST_PAD : PAD;
 
-    uint32_t *ptr = (uint32_t *)(input + len + pad);
+    uint32_t *ptr = (uint32_t *)(input + ((block_count - 1) * 64) + 56);
     ptr[0] = (0);
     ptr[1] = endian_rev_32(len * 8);
 
@@ -97,18 +100,15 @@ int main(int argc, char **argv) {
     };
     uint32_t W[80] = {0};
 
-    for (int i = 0; i < len; i += 16) {
 
-        for (int i = 0; i < 16; ++i) {
-            uint32_t *p = (uint32_t *)input;
-            W[i] = endian_rev_32(p[i]);
+    for (int i = 0; i < block_count; ++i) {
+
+        for (int j = 0; j < 16; ++j) {
+            uint32_t *p = (uint32_t *)(input + i*64);
+            W[j] = endian_rev_32(p[j]);
         }
 
         uint32_t * w = W;
-        for (int i = 0; i < 16; ++i) {
-            print_endian_rev(W[i]);
-            printf("\n");
-        }
 
         for (int t = 16; t < 80; ++t) {
             W[t] = left_rotate(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
