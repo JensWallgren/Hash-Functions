@@ -79,8 +79,7 @@ int main(int argc, char **argv) {
 
     for (int i = len; i < len + pad; ++i)
         input[i] = i == len ? FIRST_PAD : PAD;
-    uint64_t *lenptr = (uint64_t *)&input[len+pad];
-    *lenptr = (uint64_t)(len * 8);
+    *((uint64_t *)(input+len+pad)) = (uint64_t)(len * 8);
 
     uint32_t a = 0x67452301;
     uint32_t b = 0xefcdab89;
@@ -88,12 +87,6 @@ int main(int argc, char **argv) {
     uint32_t d = 0x10325476;
 
     uint32_t *block = (uint32_t *)&input[0*16];
-    /*
-    printf("Block 0 contains:\n");
-    for (int i = 0; i < 16; ++i) {
-        printf("[%d]%d\n", i, block[i]);
-    }
-    */
 
     for (int i = 0; i < len; i += 16) {
         uint32_t *block = (uint32_t *)&input[i*16];
