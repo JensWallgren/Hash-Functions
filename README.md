@@ -1,3 +1,4 @@
+### Cryptographic hash functions for reference
 I've been building some Hash function implementations - just to learn the stuff.
 
 Not putting this out there for others to use. **It's in no way close to production ready.**
