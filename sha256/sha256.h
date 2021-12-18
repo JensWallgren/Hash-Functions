@@ -91,7 +91,7 @@ void print_binary(uint8_t *ptr, int size) {
 
 
 
-char *produce_hash(char *input_string, int print_debug_info) {
+char *sha256(char *input_string, int print_debug_info) {
     size_t len = strlen(input_string);
     size_t block_count = (len + 8) / 64 + 1;
     if (print_debug_info)
@@ -166,14 +166,6 @@ char *produce_hash(char *input_string, int print_debug_info) {
         uint32_t g = H[6];
         uint32_t h = H[7];
 
-        // Print padded and extended message
-        /*
-        for (int t = 0; t < 64; ++t) {
-            printf("[%d]", t);
-            printf("%lu", W[t]);
-            printf("\n");
-        }
-        */
 
         int count = 0;
         for (int t = 0; t < 64; ++t) {
