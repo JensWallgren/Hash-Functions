@@ -89,14 +89,10 @@ void print_binary(uint8_t *ptr, int size) {
 }
 
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        printf("\nError: Wrong number of arguments."
-               "\nUsage: [program_name].exe [input_string]\n\n");
-        return 1;
-    }
-    
-    size_t len = strlen(argv[1]);
+typedef int boolean;
+
+char *produce_hash(char *input_string, boolean print_debug_info) {
+    size_t len = strlen(input_string);
     size_t block_count = (len + 8) / 64 + 1;
     printf("len: %d,  blocks: %d\n\n", len, block_count);
 
@@ -104,7 +100,7 @@ int main(int argc, char **argv) {
     pad = pad ? pad : 56;
 
     uint8_t *input = malloc(64 * block_count);
-    strcpy(input, argv[1]);
+    strcpy(input, input_string);
 
     for (int i = len; i < len + pad; ++i)
         input[i] = i == len ? FIRST_PAD : PAD;
@@ -113,7 +109,8 @@ int main(int argc, char **argv) {
     ptr[0] = (0);
     ptr[1] = endian_rev_32(len * 8);
 
-    print_binary(input, 64);
+    if (print_debug_info)
+        print_binary(input, 64);
 
 
     uint32_t H[] = {
@@ -156,7 +153,8 @@ int main(int argc, char **argv) {
             uint32_t sig0 = SSIG0(W[t-15]);
             W[t] = SSIG1(W[t-2]) + W[t-7] + SSIG0(W[t-15]) + W[t-16];
         }
-        print_binary((uint8_t *)W, 64*3);
+        if (print_debug_info)
+            print_binary((uint8_t *)W, 64*3);
 
         uint32_t a = H[0];
         uint32_t b = H[1];
@@ -188,8 +186,10 @@ int main(int argc, char **argv) {
             c = b;
             b = a;
             a = T1 + T2;
-            printf("[t = %d] T1=%lu, T2=%lu, A=%lu, B=%lu, C=%lu, D=%lu, E=%lu\n",
-                   t, T1, T2, a, b, c, d, e);
+            if (print_debug_info) {
+                printf("[t = %d] T1=%lu, T2=%lu, A=%lu, B=%lu, C=%lu, D=%lu, E=%lu\n",
+                       t, T1, T2, a, b, c, d, e);
+            }
         }
 
         H[0] = H[0] + a;
@@ -201,16 +201,31 @@ int main(int argc, char **argv) {
         H[6] = H[6] + g;
         H[7] = H[7] + h;
 
-        printf("\nBlock %d processed -- H[0]=%lu, H[1]=%lu, H[2]=%lu, H[3]=%lu, [4]=%lu\n",
-               i, H[0], H[1], H[2], H[3], H[4]);
+        if (print_debug_info) {
+            printf("\nBlock %d processed -- H[0]=%lu, H[1]=%lu, H[2]=%lu, H[3]=%lu, [4]=%lu\n",
+                   i, H[0], H[1], H[2], H[3], H[4]);
+        }
     }
 
     char *hash = calloc(8*5+1, 1);
     for (int i = 0; i < 8; ++i) {
         sprintf(hash, "%s%08x", hash, H[i]);
     }
+    return hash;
+}
+
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        printf("\nError: Wrong number of arguments."
+               "\nUsage: [program_name].exe [input_string]\n\n");
+        return 1;
+    }
+    
+    char *hash = produce_hash(argv[1], 0);
 
     printf("\n\n---- FINAL HASH ----\n   Final hash is: %s\n", hash);
     return 0;
 }
+
 
