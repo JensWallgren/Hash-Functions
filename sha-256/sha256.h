@@ -100,7 +100,7 @@ char *produce_hash(char *input_string, int print_debug_info) {
     int pad = (56 - len) % 64;
     pad = pad ? pad : 56;
 
-    uint8_t *input = malloc(64 * block_count);
+    uint8_t *input = calloc(64 * block_count, 1);
     strcpy(input, input_string);
 
     for (int i = len; i < len + pad; ++i)
@@ -177,7 +177,7 @@ char *produce_hash(char *input_string, int print_debug_info) {
 
         int count = 0;
         for (int t = 0; t < 64; ++t) {
-            uint32_t T1 = h+ BSIG1(e) + CH(e, f, g) + K[t] + W[t];
+            uint32_t T1 = h + BSIG1(e) + CH(e, f, g) + K[t] + W[t];
             uint32_t T2 = BSIG0(a) + MAJ(a, b, c);
             h = g;
             g = f;
@@ -208,10 +208,16 @@ char *produce_hash(char *input_string, int print_debug_info) {
         }
     }
 
-    char *hash = calloc(8*5+1, 1);
+    // TODO: We're running into memory problems here. See Address Sanitizer.
+    //char *hash = calloc(8*5+1, 1);
+    char *hash = calloc(500, 1);
     for (int i = 0; i < 8; ++i) {
         sprintf(hash, "%s%08x", hash, H[i]);
     }
+
+    if (print_debug_info)
+        printf("\n\n---- FINAL HASH ----\n   Final hash is: %s\n", hash);
+
     return hash;
 }
 
