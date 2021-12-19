@@ -33,6 +33,8 @@ uint32_t sha1_f(int t, uint32_t b, uint32_t c, uint32_t d) {
         return (b & c) | (b & d) | (c & d);
     else
         assert(0);
+
+    return 0xffffffff;
 }
 
 uint32_t sha1_K(int t) {
@@ -46,6 +48,8 @@ uint32_t sha1_K(int t) {
         return 0xca62c1d6;
     else
         assert(0);
+
+    return 0xffffffff;
 }
 
 char *sha1(char *input_string, int print_debug) {
@@ -57,7 +61,7 @@ char *sha1(char *input_string, int print_debug) {
     int pad = (56 - len) % 64;
     pad = pad ? pad : 56;
 
-    uint8_t *input = malloc(80 * block_count);
+    uint8_t *input = calloc(80 * block_count, 1);
     strcpy(input, input_string);
 
     for (int i = len; i < len + pad; ++i)
