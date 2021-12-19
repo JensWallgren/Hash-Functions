@@ -178,7 +178,7 @@ char *sha256(char *input_string, int print_debug_info) {
         }
     }
 
-    int H_length = sizeof(H) / sizeof(H[1]);
+    int H_length = sizeof(H) / sizeof(H[0]);
     char *hash = calloc(H_length * 8 + 1, 1);
     for (int i = 0; i < 8; ++i) {
         sprintf(hash, "%s%08x", hash, H[i]);
