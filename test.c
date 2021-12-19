@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-//#include "md5/md5.h"
+#include "md5/md5.h"
 #include "sha1/sha1.h"
 #include "sha256/sha256.h"
 
@@ -15,10 +15,26 @@ int test(hash_function fn, char *test_name, char *input, char *answer) {
     } else {
         printf("Test %s: FAILED\n", test_name);
     }
+
+    /*
+    if (fn == md5) {
+        printf(hash);
+        printf("\n");
+    }
+    */
     free(hash);
 }
 
 int main(int argc, char **argv) {
+
+    // MD5 tests
+    test(md5, "md5, 1: ", "abc", "900150983cd24fb0d6963f7d28e17f72");
+    test(md5, "md5, 2: ", "", "d41d8cd98f00b204e9800998ecf8427e");
+    test(md5, "md5, 3: ", "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+         "8215ef0796a20bcaaae116d3876c664a");
+    test(md5, "md5, 4: ", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+         "986e6938ed767a8ae9530eef54bfe5f1");
+
 
     // SHA1 tests
     test(sha1, "sha-1, 1: ", "abc", "a9993e364706816aba3e25717850c26c9cd0d89d");
