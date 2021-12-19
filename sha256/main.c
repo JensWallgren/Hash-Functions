@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    char *hash = produce_hash(argv[1], 0);
+    char *hash = sha256(argv[1], 0);
     printf("Hash: %s\n", hash);
     return 0;
 }

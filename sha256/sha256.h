@@ -9,14 +9,7 @@
 #define FIRST_PAD 0b10000000
 #define PAD       0b00000000
 
-uint16_t endian_rev_16(uint16_t n) {
-    uint16_t ret = 0;
-    uint8_t *p = (uint8_t *)&ret;
-    for (int i = 0; i < 2; ++i)
-        p[i] = (n >> (i * 8)) & 0xff;
-    return ret;
-}
-uint32_t endian_rev_32(uint32_t n) {
+uint32_t sha256_endian_rev_32(uint32_t n) {
     uint32_t ret = 0;
     uint8_t *p = (uint8_t *)&ret;
     uint8_t *p_n = (uint8_t *)&n;
@@ -24,56 +17,41 @@ uint32_t endian_rev_32(uint32_t n) {
         p[i] = p_n[4-1-i];
     return ret;
 }
-uint64_t endian_rev_64(uint64_t n) {
-    uint64_t ret = 0;
-    uint8_t *p = (uint8_t *)&ret;
-    for (int i = 0; i < 8; ++i)
-        p[i] = (n >> (i * 8)) & 0xff;
-    return ret;
-}
 
-void print_bytes(uint32_t n) {
-    uint8_t *p = (uint8_t *)&n;
-    for (int i = 0; i < 4; ++i)
-        printf("%2x ", p[i]);
-}
-
-
-uint32_t left_rotate(uint32_t x, int n) {
-    return (x << n) | (x >> (32-n));
-}
-
-uint32_t right_rotate(uint32_t x, int n) {
+uint32_t sha256_right_rotate(uint32_t x, int n) {
     return (x >> n) | (x << (32-n));
 }
 
-
-uint32_t CH(uint32_t x, uint32_t y, uint32_t z) {
+uint32_t sha256_CH(uint32_t x, uint32_t y, uint32_t z) {
     return (x & y) ^ (~x & z);
 }
 
-uint32_t MAJ(uint32_t x, uint32_t y, uint32_t z) {
+uint32_t sha256_MAJ(uint32_t x, uint32_t y, uint32_t z) {
     return (x & y) ^ (x & z) ^ (y & z);
 }
 
-uint32_t BSIG0(uint32_t x) {
-    return right_rotate(x, 2) ^ right_rotate(x, 13) ^ right_rotate(x, 22);
+uint32_t sha256_BSIG0(uint32_t x) {
+    return sha256_right_rotate(x, 2)
+        ^ sha256_right_rotate(x, 13)
+        ^ sha256_right_rotate(x, 22);
 }
 
-uint32_t BSIG1(uint32_t x) {
-    return right_rotate(x, 6) ^ right_rotate(x, 11) ^ right_rotate(x, 25);
+uint32_t sha256_BSIG1(uint32_t x) {
+    return sha256_right_rotate(x, 6)
+        ^ sha256_right_rotate(x, 11)
+        ^ sha256_right_rotate(x, 25);
 }
 
-uint32_t SSIG0(uint32_t x) {
-    return right_rotate(x, 7) ^ right_rotate(x, 18) ^ (x >> 3);
+uint32_t sha256_SSIG0(uint32_t x) {
+    return sha256_right_rotate(x, 7) ^ sha256_right_rotate(x, 18) ^ (x >> 3);
 }
 
-uint32_t SSIG1(uint32_t x) {
-    return right_rotate(x, 17) ^ right_rotate(x, 19) ^ (x >> 10);
+uint32_t sha256_SSIG1(uint32_t x) {
+    return sha256_right_rotate(x, 17) ^ sha256_right_rotate(x, 19) ^ (x >> 10);
 }
 
 
-void print_binary(uint8_t *ptr, int size) {
+void sha256_print_binary(uint8_t *ptr, int size) {
     for (int i = 0; i < size; ++i) {
         if (i % 8 == 0)
             printf("\n");
@@ -108,10 +86,10 @@ char *sha256(char *input_string, int print_debug_info) {
 
     uint32_t *ptr = (uint32_t *)(input + ((block_count - 1) * 64) + 56);
     ptr[0] = (0);
-    ptr[1] = endian_rev_32(len * 8);
+    ptr[1] = sha256_endian_rev_32(len * 8);
 
     if (print_debug_info)
-        print_binary(input, 64);
+        sha256_print_binary(input, 64);
 
 
     uint32_t H[] = {
@@ -144,18 +122,18 @@ char *sha256(char *input_string, int print_debug_info) {
 
         for (int j = 0; j < 16; ++j) {
             uint32_t *p = (uint32_t *)(input + i*64);
-            W[j] = endian_rev_32(p[j]);
+            W[j] = sha256_endian_rev_32(p[j]);
         }
 
         uint32_t * w = W;
 
         for (int t = 16; t < 64; ++t) {
-            uint32_t sig1 = SSIG1(W[t-2]);
-            uint32_t sig0 = SSIG0(W[t-15]);
-            W[t] = SSIG1(W[t-2]) + W[t-7] + SSIG0(W[t-15]) + W[t-16];
+            uint32_t sig1 = sha256_SSIG1(W[t-2]);
+            uint32_t sig0 = sha256_SSIG0(W[t-15]);
+            W[t] = sha256_SSIG1(W[t-2]) + W[t-7] + sha256_SSIG0(W[t-15]) + W[t-16];
         }
         if (print_debug_info)
-            print_binary((uint8_t *)W, 64*3);
+            sha256_print_binary((uint8_t *)W, 64*3);
 
         uint32_t a = H[0];
         uint32_t b = H[1];
@@ -169,8 +147,8 @@ char *sha256(char *input_string, int print_debug_info) {
 
         int count = 0;
         for (int t = 0; t < 64; ++t) {
-            uint32_t T1 = h + BSIG1(e) + CH(e, f, g) + K[t] + W[t];
-            uint32_t T2 = BSIG0(a) + MAJ(a, b, c);
+            uint32_t T1 = h + sha256_BSIG1(e) + sha256_CH(e, f, g) + K[t] + W[t];
+            uint32_t T2 = sha256_BSIG0(a) + sha256_MAJ(a, b, c);
             h = g;
             g = f;
             f = e;
@@ -200,9 +178,8 @@ char *sha256(char *input_string, int print_debug_info) {
         }
     }
 
-    // TODO: We're running into memory problems here. See Address Sanitizer.
-    //char *hash = calloc(8*5+1, 1);
-    char *hash = calloc(500, 1);
+    int H_length = sizeof(H) / sizeof(H[1]);
+    char *hash = calloc(H_length * 8 + 1, 1);
     for (int i = 0; i < 8; ++i) {
         sprintf(hash, "%s%08x", hash, H[i]);
     }
