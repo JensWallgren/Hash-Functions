@@ -15,11 +15,6 @@ int test(hash_function fn, char *test_name, char *input, char *answer) {
     } else {
         printf("Test %s: FAILED\n", test_name);
     }
-
-    if (fn == md5) {
-        printf(hash);
-        printf("\n");
-    }
     free(hash);
 }
 
