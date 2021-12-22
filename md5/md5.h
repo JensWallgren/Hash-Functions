@@ -73,23 +73,21 @@ void md5_round_4(uint32_t *a, uint32_t b, uint32_t c, uint32_t d,
 
 
 char *md5(char *input_string, int print_debug) {
+    int block_size = 64;
     int len = strlen(input_string);
-    int block_count = len / 64 + 1;
-    int next_block_boundary = block_count * 64;
-    int pad = next_block_boundary - len - 8;
+    int blocks = len / block_size + 1;
+    int pad = blocks * block_size - len - 8;
 
     if (pad <= 0) {
-        block_count += 1;
-        pad += 64;
+        blocks += 1;
+        pad += block_size;
     }
-    pad -= 8;
 
-    unsigned char *input = calloc(len + pad, sizeof(uint64_t));
+    unsigned char *input = calloc(blocks * block_size, 1);
     strcpy(input, input_string);
     input[len] = 0b10000000;
 
-    //*((uint64_t *)(input+len+pad)) = (uint64_t)(len * 8);
-    uint64_t *embedded_length = &input[block_count * 64 - 8];
+    uint64_t *embedded_length = &input[blocks * block_size - 8];
     *embedded_length = len * 8;
 
     uint32_t a = 0x67452301;
@@ -99,7 +97,7 @@ char *md5(char *input_string, int print_debug) {
     uint32_t *block = (uint32_t *)&input[0];
 
 
-    for (int i = 0; i < block_count * 64; i += 64) {
+    for (int i = 0; i < blocks * block_size; i += block_size) {
         uint32_t *block = (uint32_t *)&input[i];
         uint32_t start_of_block_a = a;
         uint32_t start_of_block_b = b;
@@ -108,7 +106,7 @@ char *md5(char *input_string, int print_debug) {
 
         if (print_debug) {
             printf("Current block:  ", i);
-            for (int j = 0; j < 64; ++j) printf("%02x ", input[i*64 + j]);
+            for (int j = 0; j < block_size; ++j) printf("%02x ", input[i*block_size + j]);
             printf("\n");
         }
 
